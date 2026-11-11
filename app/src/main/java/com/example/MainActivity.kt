@@ -185,6 +185,20 @@ class MainActivity : ComponentActivity() {
                             }
 
                             is ScreenDestination.PlaylistDetail -> {
+                                val customPlaylistTracks by androidx.compose.runtime.produceState(
+                                    initialValue = emptyList<com.example.data.model.Track>(),
+                                    key1 = screen.playlist.id,
+                                    key2 = tracks
+                                ) {
+                                    if (!screen.playlist.isSmart && screen.playlist.id > 0) {
+                                        viewModel.getPlaylistTracks(screen.playlist.id).collect {
+                                            value = it
+                                        }
+                                    } else {
+                                        value = emptyList()
+                                    }
+                                }
+
                                 val playlistTracks = if (screen.playlist.isSmart) {
                                     when (screen.playlist.name) {
                                         "Favorites" -> tracks.filter { it.isFavorite }
@@ -192,8 +206,16 @@ class MainActivity : ComponentActivity() {
                                         "Recently Added" -> tracks.sortedByDescending { it.dateAdded }.take(50)
                                         else -> tracks
                                     }
+                                } else if (screen.playlist.id < 0) {
+                                    when {
+                                        screen.playlist.name.startsWith("Album: ") -> tracks.filter { it.album == screen.playlist.name.removePrefix("Album: ") }
+                                        screen.playlist.name.startsWith("Artist: ") -> tracks.filter { it.artist == screen.playlist.name.removePrefix("Artist: ") }
+                                        screen.playlist.name.startsWith("Genre: ") -> tracks.filter { it.genre.equals(screen.playlist.name.removePrefix("Genre: "), ignoreCase = true) }
+                                        screen.playlist.name.startsWith("Folder: ") -> tracks.filter { it.folderName == screen.playlist.name.removePrefix("Folder: ") }
+                                        else -> tracks
+                                    }
                                 } else {
-                                    tracks.filter { it.folderName == screen.playlist.name }
+                                    customPlaylistTracks
                                 }
 
                                 PlaylistDetailScreen(

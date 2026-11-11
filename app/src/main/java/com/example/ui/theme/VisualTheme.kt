@@ -74,42 +74,42 @@ object ThemeGallery {
         VisualTheme(
             id = ThemePresetId.AMOLED_DARK,
             name = "AMOLED Obsidian",
-            description = "Pure black aesthetics with subtle deep slate vignette",
-            gradientColors = listOf(Color(0xFF000000), Color(0xFF080C14), Color(0xFF020408)),
+            description = "Pure black aesthetics with subtle luxury geometric carbon texture",
+            drawableRes = R.drawable.bg_amoled_dark,
             primaryColor = Color(0xFF00E5FF),
             secondaryColor = Color(0xFF94A3B8)
         ),
         VisualTheme(
             id = ThemePresetId.MIDNIGHT,
             name = "Midnight Horizon",
-            description = "Deep velvet indigo and dark cobalt nightfall gradients",
-            gradientColors = listOf(Color(0xFF0B1329), Color(0xFF070B19), Color(0xFF03050B)),
+            description = "Deep velvet indigo nightfall with luminous crescent moon & mist",
+            drawableRes = R.drawable.bg_midnight,
             primaryColor = Color(0xFF60A5FA),
             secondaryColor = Color(0xFF818CF8)
         ),
         VisualTheme(
             id = ThemePresetId.LIQUID_GLASS,
             name = "Liquid Glass",
-            description = "Translucent frosted refraction with prism cyan and deep violet",
-            gradientColors = listOf(Color(0xFF0F1E36), Color(0xFF13132B), Color(0xFF060913)),
+            description = "Translucent frosted refraction with prism cyan and deep violet flow",
+            drawableRes = R.drawable.bg_liquid_glass,
             primaryColor = Color(0xFF22D3EE),
             secondaryColor = Color(0xFFA78BFA)
         ),
         VisualTheme(
             id = ThemePresetId.MINIMAL_ART,
             name = "Minimal Dark Art",
-            description = "Refined monochromatic charcoal texture with clean aesthetic",
-            gradientColors = listOf(Color(0xFF14171F), Color(0xFF0D0F14), Color(0xFF07080A)),
+            description = "Refined monochromatic charcoal and dark mineral architecture",
+            drawableRes = R.drawable.bg_minimal_art,
             primaryColor = Color(0xFFE2E8F0),
             secondaryColor = Color(0xFF94A3B8)
         ),
         VisualTheme(
             id = ThemePresetId.DYNAMIC_GRADIENT,
             name = "Dynamic Gradient",
-            description = "Modern multi-stop mesh of ultraviolet, deep teal, and obsidian",
-            gradientColors = listOf(Color(0xFF1A102F), Color(0xFF0B192C), Color(0xFF05070E)),
+            description = "Modern multi-stop chromatic wave of ultraviolet and electric cyan",
+            drawableRes = R.drawable.bg_dynamic_gradient,
             primaryColor = Color(0xFFF43F5E),
-            secondaryColor = Color(0xFFFBBF24)
+            secondaryColor = Color(0xFF818CF8)
         )
     )
 

@@ -89,6 +89,7 @@ import com.example.R
 import com.example.data.model.Album
 import com.example.data.model.Artist
 import com.example.data.model.Folder
+import com.example.data.model.Genre
 import com.example.data.model.Playlist
 import com.example.data.model.Track
 import com.example.ui.components.TagEditorDialog
@@ -137,7 +138,7 @@ fun LibraryScreen(
     var editingTrack by remember { mutableStateOf<Track?>(null) }
     var showAddToPlaylistDialogForTrack by remember { mutableStateOf<Track?>(null) }
 
-    val tabs = listOf("Home", "Tracks", "Playlists", "Albums", "Artists", "Folders")
+    val tabs = listOf("Home", "Tracks", "Playlists", "Albums", "Artists", "Genres", "Folders")
     val primaryColor = activeTheme.primaryColor
     val secondaryColor = activeTheme.secondaryColor
 
@@ -198,6 +199,18 @@ fun LibraryScreen(
                     name = folderTracks.first().folderName,
                     path = path,
                     trackCount = folderTracks.size
+                )
+            }.sortedBy { it.name.lowercase() }
+        }
+    }
+
+    val genres by remember(tracks) {
+        derivedStateOf {
+            tracks.groupBy { it.genre.ifBlank { "Music" } }.map { (genreName, genreTracks) ->
+                Genre(
+                    id = genreTracks.first().id,
+                    name = genreName,
+                    trackCount = genreTracks.size
                 )
             }.sortedBy { it.name.lowercase() }
         }
@@ -400,8 +413,14 @@ fun LibraryScreen(
                     AlbumsTabContent(
                         albums = albums,
                         onAlbumClick = { album ->
-                            val albumTracks = tracks.filter { it.album == album.name }
-                            onPlayAll(albumTracks)
+                            onSelectPlaylist(
+                                Playlist(
+                                    id = -101,
+                                    name = "Album: ${album.name}",
+                                    trackCount = album.trackCount,
+                                    isSmart = false
+                                )
+                            )
                         },
                         primaryColor = primaryColor
                     )
@@ -411,19 +430,48 @@ fun LibraryScreen(
                     ArtistsTabContent(
                         artists = artists,
                         onArtistClick = { artist ->
-                            val artistTracks = tracks.filter { it.artist == artist.name }
-                            onPlayAll(artistTracks)
+                            onSelectPlaylist(
+                                Playlist(
+                                    id = -102,
+                                    name = "Artist: ${artist.name}",
+                                    trackCount = artist.trackCount,
+                                    isSmart = false
+                                )
+                            )
                         },
                         primaryColor = primaryColor
                     )
                 }
                 5 -> {
+                    // GENRES TAB
+                    GenresTabContent(
+                        genres = genres,
+                        onGenreClick = { genre ->
+                            onSelectPlaylist(
+                                Playlist(
+                                    id = -103,
+                                    name = "Genre: ${genre.name}",
+                                    trackCount = genre.trackCount,
+                                    isSmart = false
+                                )
+                            )
+                        },
+                        primaryColor = primaryColor
+                    )
+                }
+                6 -> {
                     // FOLDERS TAB
                     FoldersTabContent(
                         folders = folders,
                         onFolderClick = { folder ->
-                            val folderTracks = tracks.filter { it.folderPath == folder.path }
-                            onPlayAll(folderTracks)
+                            onSelectPlaylist(
+                                Playlist(
+                                    id = -104,
+                                    name = "Folder: ${folder.name}",
+                                    trackCount = folder.trackCount,
+                                    isSmart = false
+                                )
+                            )
                         },
                         primaryColor = primaryColor
                     )
@@ -1438,3 +1486,64 @@ private fun FoldersTabContent(
         }
     }
 }
+
+@Composable
+private fun GenresTabContent(
+    genres: List<Genre>,
+    onGenreClick: (Genre) -> Unit,
+    primaryColor: Color
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        items(genres) { genre ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.06f))
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                    .clickable { onGenreClick(genre) }
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(primaryColor.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = genre.name,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "${genre.trackCount} tracks",
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(100.dp))
+        }
+    }
+}
+

@@ -49,6 +49,7 @@ class MusicPlaybackService : Service() {
         const val NOTIFICATION_ID = 1001
 
         const val ACTION_PLAY = "com.example.ACTION_PLAY"
+        const val ACTION_PLAY_TRACK = "com.example.ACTION_PLAY_TRACK"
         const val ACTION_PAUSE = "com.example.ACTION_PAUSE"
         const val ACTION_TOGGLE_PLAY = "com.example.ACTION_TOGGLE_PLAY"
         const val ACTION_NEXT = "com.example.ACTION_NEXT"
@@ -56,8 +57,13 @@ class MusicPlaybackService : Service() {
         const val ACTION_SEEK = "com.example.ACTION_SEEK"
         const val ACTION_STOP = "com.example.ACTION_STOP"
         const val ACTION_APPLY_EFFECTS = "com.example.ACTION_APPLY_EFFECTS"
+        const val ACTION_START_SLEEP_TIMER = "com.example.ACTION_START_SLEEP_TIMER"
+        const val ACTION_CANCEL_SLEEP_TIMER = "com.example.ACTION_CANCEL_SLEEP_TIMER"
 
+        const val EXTRA_TRACK_ID = "EXTRA_TRACK_ID"
         const val EXTRA_POSITION_MS = "EXTRA_POSITION_MS"
+        const val EXTRA_TIMER_MINUTES = "EXTRA_TIMER_MINUTES"
+        const val EXTRA_TIMER_FINISH_SONG = "EXTRA_TIMER_FINISH_SONG"
 
         fun startService(context: Context, action: String) {
             val intent = Intent(context, MusicPlaybackService::class.java).apply {
@@ -77,6 +83,7 @@ class MusicPlaybackService : Service() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var mediaSession: MediaSession? = null
+    private var currentlyLoadedTrackId: Long? = null
     private lateinit var audioManager: AudioManager
     private lateinit var musicRepository: MusicRepository
 
@@ -148,6 +155,18 @@ class MusicPlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            ACTION_PLAY_TRACK -> {
+                val trackId = intent.getLongExtra(EXTRA_TRACK_ID, -1L)
+                val state = PlaybackStateManager.state.value
+                val targetTrack = if (trackId != -1L) {
+                    state.queue.find { it.id == trackId } ?: state.currentTrack
+                } else {
+                    state.currentTrack ?: state.queue.getOrNull(0)
+                }
+                if (targetTrack != null) {
+                    playTrack(targetTrack)
+                }
+            }
             ACTION_PLAY -> play()
             ACTION_PAUSE -> pause()
             ACTION_TOGGLE_PLAY -> togglePlay()
@@ -160,6 +179,14 @@ class MusicPlaybackService : Service() {
             ACTION_STOP -> stopPlayback()
             ACTION_APPLY_EFFECTS -> {
                 applyAudioEffects(PlaybackStateManager.state.value.audioEffects)
+            }
+            ACTION_START_SLEEP_TIMER -> {
+                val minutes = intent.getIntExtra(EXTRA_TIMER_MINUTES, 15)
+                val finishSong = intent.getBooleanExtra(EXTRA_TIMER_FINISH_SONG, false)
+                startSleepTimer(minutes, finishSong)
+            }
+            ACTION_CANCEL_SLEEP_TIMER -> {
+                cancelSleepTimer()
             }
         }
         return START_NOT_STICKY
@@ -224,6 +251,7 @@ class MusicPlaybackService : Service() {
     fun playTrack(track: Track) {
         if (!requestAudioFocus()) return
 
+        currentlyLoadedTrackId = track.id
         releasePlayer()
 
         try {
@@ -317,21 +345,19 @@ class MusicPlaybackService : Service() {
 
     private fun play() {
         val state = PlaybackStateManager.state.value
-        if (mediaPlayer != null) {
+        val targetTrack = state.currentTrack ?: state.queue.getOrNull(state.queueIndex) ?: state.queue.getOrNull(0)
+        if (targetTrack == null) return
+
+        if (mediaPlayer != null && currentlyLoadedTrackId == targetTrack.id) {
             if (requestAudioFocus()) {
                 mediaPlayer?.start()
                 PlaybackStateManager.updatePlayingState(true)
                 startProgressTracker()
-                state.currentTrack?.let {
-                    startForeground(NOTIFICATION_ID, buildNotification(it, true))
-                }
+                startForeground(NOTIFICATION_ID, buildNotification(targetTrack, true))
                 ResonixWidgetProvider.updateAllWidgets(applicationContext)
             }
         } else {
-            val trackToPlay = state.currentTrack ?: state.queue.getOrNull(0)
-            if (trackToPlay != null) {
-                playTrack(trackToPlay)
-            }
+            playTrack(targetTrack)
         }
     }
 
@@ -391,6 +417,7 @@ class MusicPlaybackService : Service() {
     }
 
     private fun stopPlayback() {
+        currentlyLoadedTrackId = null
         releasePlayer()
         abandonAudioFocus()
         PlaybackStateManager.updatePlayingState(false)

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -110,7 +111,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         PlaybackStateManager.setQueue(queue, index)
         val context = getApplication<Application>()
         val intent = Intent(context, MusicPlaybackService::class.java).apply {
-            action = MusicPlaybackService.ACTION_PLAY
+            action = MusicPlaybackService.ACTION_PLAY_TRACK
+            putExtra(MusicPlaybackService.EXTRA_TRACK_ID, track.id)
         }
         startPlaybackService(context, intent)
     }
@@ -171,7 +173,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun playQueueIndex(index: Int) {
         val queue = PlaybackStateManager.state.value.queue
         val track = queue.getOrNull(index) ?: return
-        playTrack(track, queue)
+        PlaybackStateManager.setQueueIndex(index)
+        val context = getApplication<Application>()
+        val intent = Intent(context, MusicPlaybackService::class.java).apply {
+            action = MusicPlaybackService.ACTION_PLAY_TRACK
+            putExtra(MusicPlaybackService.EXTRA_TRACK_ID, track.id)
+        }
+        startPlaybackService(context, intent)
     }
 
     // Favorites
@@ -251,16 +259,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val totalSec = minutes * 60L
         PlaybackStateManager.updateSleepTimer(totalSec, finishSong, isActive = true)
         val context = getApplication<Application>()
-        val serviceIntent = Intent(context, MusicPlaybackService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent)
-        } else {
-            context.startService(serviceIntent)
+        val serviceIntent = Intent(context, MusicPlaybackService::class.java).apply {
+            action = MusicPlaybackService.ACTION_START_SLEEP_TIMER
+            putExtra(MusicPlaybackService.EXTRA_TIMER_MINUTES, minutes)
+            putExtra(MusicPlaybackService.EXTRA_TIMER_FINISH_SONG, finishSong)
         }
+        startPlaybackService(context, serviceIntent)
     }
 
     fun cancelSleepTimer() {
         PlaybackStateManager.updateSleepTimer(0, finishSong = false, isActive = false)
+        val context = getApplication<Application>()
+        val serviceIntent = Intent(context, MusicPlaybackService::class.java).apply {
+            action = MusicPlaybackService.ACTION_CANCEL_SLEEP_TIMER
+        }
+        startPlaybackService(context, serviceIntent)
+    }
+
+    fun getPlaylistTracks(playlistId: Long): kotlinx.coroutines.flow.Flow<List<Track>> {
+        return repository.getPlaylistTrackIds(playlistId).map { ids ->
+            val idSet = ids.toSet()
+            _augmentedTracks.value.filter { idSet.contains(it.id) }
+        }
     }
 
     fun toggleDarkMode(isDark: Boolean) {
