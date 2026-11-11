@@ -1,0 +1,6 @@
+{
+  "name": "Resonix",
+  "description": "Pemutar musik lokal profesional dengan 22+ preset equalizer, bass booster, 3D virtualizer, visualizer audio, lirik tersinkronisasi, dan manajemen playlist.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
