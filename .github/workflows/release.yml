@@ -1,0 +1,23 @@
+nama: app/build/outputs/apk/release/app-release.apk
+pada:
+  mendorong:
+    cabang: [utama]
+  workflow_dispatch:
+jobs:
+  membangun:
+    berjalan: ubuntu-latest
+    langkah-langkah:
+      - kegunaan: tindakan/checkout@v5
+      - kegunaan: tindakan/setup-java@v5
+        dengan:
+          java-version: ‘17’
+          distribution: ‘temurin’
+      - penggunaan: gradle/tindak/setup-gradle@v4
+        dengan:
+          versi gradle: '9.3.1'
+      - run: keytool -genkeypair -v -keystore rilis.keystore -alias mykey -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Test, OU=Test, O=Test, L=Test, ST=Test, C=ID"
+      - jalankan: gradle assembleRelease -Pandroid.injected.signing.store.file=$PWD/release.keystore -Pandroid.injected.signing.store.password=123456 -Pandroid.injected.signing.key.alias=mykey -Pandroid.injected.signing.key.password=123456
+      - kegunaan: tindakan/upload-artifact@v5
+        dengan:
+          nama: app-release
+          jalan: app/build/outputs/apk/release/app-release.apk
